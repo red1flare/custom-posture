@@ -29,7 +29,7 @@ async function evaluateDevices(devices) {
   })
 
   // log the responses
-  console.log(evaluations)
+  //console.log(evaluations)
 
   return evaluations
 }
