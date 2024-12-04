@@ -1,31 +1,38 @@
 const jose = require('jose')
 
 async function computePostureScores(devices) {
-  const resp = await fetch(`${EXTERNAL_SERVICE_ENDPOINT}`)
-  const body = await resp.json()
-  const devicePosture = body.result
-  const evaluations = await evaluateDevices(devices, devicePosture)
+  const evaluations = await evaluateDevices(devices)
   return evaluations
 }
 
 /**
- * Where your business logic should go.
- * Function to match external device posture checks to devices received in the request.
- * All devices in the request MUST be returned in the response
- * @param {*} devices - devices on a cloudflare account to be evaluated. See 'Request Body' in README for more details.
- * @param {*} devicePosture - Device posture checks from the third party service. 
- * @returns evaluations as a map for each device in 'devices'.
- * The key should be the Cloudflare device_id and the value should be an object consisting of an
- * external id (s2s_id) and assigned score. See 'Response Body' in README for more details.
+ * Where the business logic of this custom provider check happens
+ * In this simple prototype, the devices with serial numbers set in wrangler.toml will have a score of 100.
+ * Otherwise, the score is 0.
  */
-async function evaluateDevices(devices, devicePosture) {
+async function evaluateDevices(devices) {
+  
+  // log of all device information received by the worker
+  //console.log(devices)
+
   let evaluations = {}
   devices.forEach(device => {
-    evaluations[device.device_id] =  {s2s_id: "example_external_id", score: 0}
+    evaluations[device.device_id] =  {s2s_id: "serial number: "+device.serial_number+" /hostname: "+device.hostname+" /user: "+device.email, score: 0}
+  
+    // compare each device received by the worker with the serial numbers that should pass the posture check
+    for (const key in POSTURE_PASS) {
+      if (POSTURE_PASS[key] === device.serial_number){
+        evaluations[device.device_id] =  {s2s_id: "serial number: "+device.serial_number+" /hostname: "+device.hostname+" /user: "+device.email, score: 100}
+        //console.log("Found match! serial number: "+device.serial_number+" /hostname: "+device.hostname+" /user: "+device.email)
+      }
+    }
   })
+
+  // log the responses
+  console.log(evaluations)
+
   return evaluations
 }
-
 
 // EVERYTHING PAST THIS SHOULD NOT NEED TO CHANGE UNLESS YOU WANT TO
 // ==================================================================
